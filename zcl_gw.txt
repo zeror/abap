@@ -1,0 +1,209 @@
+class ZCL_GW definition
+  public
+  final
+  create public .
+
+public section.
+
+  class-methods SHOW_ERROR
+    importing
+      !ID type SYMSGID optional
+      !NO type SYMSGNO optional
+      !V1 type CLIKE optional
+      !V2 type CLIKE optional
+      !V3 type CLIKE optional
+      !V4 type CLIKE optional
+      !MSG type CLIKE optional
+      !T100KEY type SCX_T100KEY optional
+      !ROLLBACK type FLAG optional
+    raising
+      /IWBEP/CX_MGW_BUSI_EXCEPTION .
+  class-methods GET_FILTER_VALUE
+    importing
+      !FILTERS type /IWBEP/T_MGW_SELECT_OPTION
+      !PROPERTY type CLIKE
+    returning
+      value(VALUE) type STRING .
+  class-methods GET_FILTER_RANGE
+    importing
+      !FILTERS type /IWBEP/T_MGW_SELECT_OPTION
+      !PROPERTY type CLIKE
+    returning
+      value(RANGE) type /IWBEP/S_COD_SELECT_OPTION .
+  class-methods GET_FILTER_RANGES
+    importing
+      !FILTERS type /IWBEP/T_MGW_SELECT_OPTION
+      !PROPERTY type CLIKE
+    returning
+      value(RANGE) type /IWBEP/T_COD_SELECT_OPTIONS .
+  class-methods GET_KEY_VALUE
+    importing
+      !KEYS type /IWBEP/T_MGW_NAME_VALUE_PAIR
+      !NAME type CLIKE optional
+    returning
+      value(VALUE) type STRING .
+  class-methods GET_FILENAME_FROM_CONT_DISP
+    importing
+      !SRV_RUNTIME type ref to /IWBEP/IF_MGW_CONV_SRV_RUNTIME
+    returning
+      value(RV_FILENAME) type STRING .
+protected section.
+*"* protected components of class ZCL_GW
+*"* do not include other source files here!!!
+private section.
+*"* private components of class ZCL_GW
+*"* do not include other source files here!!!
+ENDCLASS.
+
+
+
+CLASS ZCL_GW IMPLEMENTATION.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_GW=>GET_FILENAME_FROM_CONT_DISP
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] SRV_RUNTIME                    TYPE REF TO /IWBEP/IF_MGW_CONV_SRV_RUNTIME
+* | [<-()] RV_FILENAME                    TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD GET_FILENAME_FROM_CONT_DISP.
+
+    TRY.
+        DATA(lt_request_headers) = srv_runtime->get_dp_facade( )->get_request_header( ).
+        SPLIT lt_request_headers[ name = 'content-disposition' ]-value  AT '"' INTO TABLE DATA(lt_str_tab).
+        rv_filename = cl_http_utility=>unescape_url(  lt_str_tab[ 2 ] ).
+      CATCH	/iwbep/cx_mgw_tech_exception cx_sy_itab_line_not_found.
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_GW=>GET_FILTER_RANGE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] FILTERS                        TYPE        /IWBEP/T_MGW_SELECT_OPTION
+* | [--->] PROPERTY                       TYPE        CLIKE
+* | [<-()] RANGE                          TYPE        /IWBEP/S_COD_SELECT_OPTION
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD GET_FILTER_RANGE.
+
+    DATA ls_filter  TYPE /iwbep/s_mgw_select_option.
+    DATA ls_range   TYPE /iwbep/s_cod_select_option.
+    READ TABLE filters INTO ls_filter WITH KEY property = property.
+    READ TABLE ls_filter-select_options INTO range INDEX 1.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_GW=>GET_FILTER_RANGES
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] FILTERS                        TYPE        /IWBEP/T_MGW_SELECT_OPTION
+* | [--->] PROPERTY                       TYPE        CLIKE
+* | [<-()] RANGE                          TYPE        /IWBEP/T_COD_SELECT_OPTIONS
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD GET_FILTER_RANGES.
+
+    DATA ls_filter  TYPE /iwbep/s_mgw_select_option.
+    DATA ls_range   TYPE /iwbep/s_cod_select_option.
+    READ TABLE filters INTO ls_filter WITH KEY property = property.
+    range = ls_filter-select_options.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_GW=>GET_FILTER_VALUE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] FILTERS                        TYPE        /IWBEP/T_MGW_SELECT_OPTION
+* | [--->] PROPERTY                       TYPE        CLIKE
+* | [<-()] VALUE                          TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD GET_FILTER_VALUE.
+
+    DATA ls_filter  TYPE /iwbep/s_mgw_select_option.
+    DATA ls_range   TYPE /iwbep/s_cod_select_option.
+    READ TABLE filters INTO ls_filter WITH KEY property = property.
+    READ TABLE ls_filter-select_options INTO ls_range INDEX 1.
+    value = ls_range-low.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_GW=>GET_KEY_VALUE
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] KEYS                           TYPE        /IWBEP/T_MGW_NAME_VALUE_PAIR
+* | [--->] NAME                           TYPE        CLIKE(optional)
+* | [<-()] VALUE                          TYPE        STRING
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+  METHOD get_key_value.
+
+    DATA ls_key         TYPE  /iwbep/s_mgw_name_value_pair.
+    IF name IS INITIAL.
+      READ TABLE keys INTO ls_key INDEX 1.
+    ELSE.
+      READ TABLE keys INTO ls_key WITH KEY name = name.
+    ENDIF.
+
+    value = ls_key-value.
+
+  ENDMETHOD.
+
+
+* <SIGNATURE>---------------------------------------------------------------------------------------+
+* | Static Public Method ZCL_GW=>SHOW_ERROR
+* +-------------------------------------------------------------------------------------------------+
+* | [--->] ID                             TYPE        SYMSGID(optional)
+* | [--->] NO                             TYPE        SYMSGNO(optional)
+* | [--->] V1                             TYPE        CLIKE(optional)
+* | [--->] V2                             TYPE        CLIKE(optional)
+* | [--->] V3                             TYPE        CLIKE(optional)
+* | [--->] V4                             TYPE        CLIKE(optional)
+* | [--->] MSG                            TYPE        CLIKE(optional)
+* | [--->] T100KEY                        TYPE        SCX_T100KEY(optional)
+* | [--->] ROLLBACK                       TYPE        FLAG(optional)
+* | [!CX!] /IWBEP/CX_MGW_BUSI_EXCEPTION
+* +--------------------------------------------------------------------------------------</SIGNATURE>
+METHOD show_error.
+
+  IF rollback IS NOT INITIAL.
+    CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+  ENDIF.
+
+  IF msg IS NOT INITIAL.
+
+    RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
+      EXPORTING
+        textid            = /iwbep/cx_mgw_busi_exception=>business_error
+*        http_status_code = /iwbep/cx_mgw_busi_exception=>gcs_http_status_codes-forbidden
+        message_unlimited = msg.
+
+  ELSE.
+      IF rollback IS NOT INITIAL.
+    CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+  ENDIF.
+
+    DATA ls_error TYPE SCX_T100KEY.
+
+    IF t100key IS NOT INITIAL .
+      ls_error = t100key.
+    ELSE.
+      ls_error-msgid =  id.
+      ls_error-msgno =  no.
+      ls_error-attr1 =  v1.
+      ls_error-attr2 =  v2.
+      ls_error-attr3 =  v3.
+      ls_error-attr4 =  v4.
+    ENDIF.
+
+    RAISE EXCEPTION TYPE /iwbep/cx_mgw_busi_exception
+      EXPORTING
+*        http_status_code = /iwbep/cx_mgw_busi_exception=>gcs_http_status_codes-forbidden
+        textid = ls_error.
+
+  ENDIF.
+
+ENDMETHOD.
+ENDCLASS.
